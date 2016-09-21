@@ -4,6 +4,8 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.App as Html
 import Keyboard
+import Matrix exposing (Matrix)
+import Array exposing (Array)
 
 
 -- | y
@@ -12,14 +14,16 @@ import Keyboard
 
 
 type alias Model =
-    { tiles : List Tile
+    { tiles : Matrix Tile
     , player : Player
     , currentPosition : Position
     }
 
 
 type alias Position =
-    Int
+    { x : Int
+    , y : Int
+    }
 
 
 type alias Player =
@@ -34,11 +38,16 @@ type alias Tile =
     }
 
 
+initGameBoard : Matrix Tile
+initGameBoard =
+    Matrix.repeat 5 5 initTile
+
+
 init : Model
 init =
-    { tiles = [ initTile, initTile, initTile, initTile, initTile ]
+    { tiles = initGameBoard
     , player = greg
-    , currentPosition = 0
+    , currentPosition = { x = 0, y = 0 }
     }
 
 
@@ -64,38 +73,71 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         HandleKey keyCode ->
-            case keyCode of
-                40 ->
-                    -- Down
-                    { model | currentPosition = model.currentPosition - 1 } ! []
+            let
+                curPos =
+                    model.currentPosition
+            in
+                case keyCode of
+                    40 ->
+                        -- Down
+                        { model | currentPosition = { x = curPos.x, y = curPos.y - 1 } } ! []
 
-                38 ->
-                    -- Up
-                    { model | currentPosition = model.currentPosition + 1 } ! []
+                    38 ->
+                        -- Up
+                        { model | currentPosition = { x = curPos.x, y = curPos.y + 1 } } ! []
 
-                _ ->
-                    model ! []
+                    37 ->
+                        -- Left
+                        { model | currentPosition = { x = curPos.x - 1, y = curPos.y } } ! []
+
+                    39 ->
+                        -- Right
+                        { model | currentPosition = { x = curPos.x + 1, y = curPos.y } } ! []
+
+                    _ ->
+                        model ! []
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        (List.indexedMap (\index tile -> viewTile model index tile) model.tiles)
+    div [ class "gameBoard" ]
+        [ (model.tiles
+            |> Matrix.indexedMap (viewTile model)
+            |> matrixToDivs
+          )
+        ]
 
 
-viewTile : Model -> Position -> Tile -> Html Msg
-viewTile model position tile =
+viewTile : Model -> Int -> Int -> Tile -> Html Msg
+viewTile model x y tile =
     div
         [ class "gameTile"
         , style
             [ ( "background-image", "url(" ++ tile.backgroundImage ++ ")" )
             ]
         ]
-        [ if position == model.currentPosition then
+        [ if x == model.currentPosition.x && y == model.currentPosition.y then
             div [ class "player", style [ ( "background-color", model.player.hatColor ) ] ] []
           else
             div [] []
         ]
+
+
+matrixToDivs : Matrix (Html.Html Msg) -> Html.Html Msg
+matrixToDivs matrix =
+    let
+        makeRow y =
+            Matrix.getRow y matrix
+                |> Maybe.map (Array.toList)
+                |> Maybe.withDefault []
+                |> Html.div [ class "gameRow" ]
+
+        height =
+            Matrix.height matrix
+    in
+        [0..height]
+            |> List.map makeRow
+            |> Html.div []
 
 
 subscriptions : Model -> Sub Msg
