@@ -4,8 +4,12 @@ import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.App as Html
 import Keyboard
-import Matrix exposing (Matrix)
-import Array exposing (Array)
+import Navigation
+
+
+-- import UrlParser as P
+
+import Game
 
 
 -- | y
@@ -14,142 +18,122 @@ import Array exposing (Array)
 
 
 type alias Model =
-    { tiles : Matrix Tile
-    , player : Player
-    , currentPosition : Position
+    { gamePage : Game.Model
+    , url : String
     }
 
 
-type alias Position =
-    { x : Int
-    , y : Int
-    }
+init : Maybe Location -> ( Model, Cmd Msg )
+init location =
+    ( { gamePage = Game.init
+      , url = "#game"
+      }
+    , Cmd.none
+    )
 
 
-type alias Player =
-    { name : String
-    , hatColor : String
-    }
+type Location
+    = Game
+    | MapBuilder
 
 
-type alias Tile =
-    { name : String
-    , backgroundImage : String
-    }
+urlFor : Location -> String
+urlFor loc =
+    let
+        url =
+            case loc of
+                Game ->
+                    "game"
+
+                MapBuilder ->
+                    "map-builder"
+    in
+        "#" ++ url
 
 
-initGameBoard : Matrix Tile
-initGameBoard =
-    Matrix.repeat 5 5 initTile
+locFor : Navigation.Location -> Maybe Location
+locFor path =
+    let
+        segments =
+            path.hash
+    in
+        case segments of
+            "#game" ->
+                Just Game
 
+            "#map-builder" ->
+                Just MapBuilder
 
-init : Model
-init =
-    { tiles = initGameBoard
-    , player = greg
-    , currentPosition = { x = 0, y = 0 }
-    }
-
-
-initTile : Tile
-initTile =
-    { name = "grass"
-    , backgroundImage = "http://oi45.tinypic.com/2ir0vbl.jpg"
-    }
-
-
-greg : Player
-greg =
-    { name = "Greg"
-    , hatColor = "red"
-    }
+            _ ->
+                Just Game
 
 
 type Msg
-    = HandleKey Int
+    = GamePage Game.Msg
+
+
+urlUpdate : Maybe Location -> Model -> ( Model, Cmd Msg )
+urlUpdate location oldModel =
+    let
+        newModel =
+            case Maybe.withDefault Game location of
+                Game ->
+                    { oldModel | url = "#game" }
+
+                MapBuilder ->
+                    { oldModel | url = "#map-builder" }
+    in
+        ( newModel
+        , Cmd.none
+        )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        HandleKey keyCode ->
+        GamePage gameMsg ->
             let
-                curPos =
-                    model.currentPosition
+                ( updatedGame, commands ) =
+                    Game.update gameMsg model.gamePage
             in
-                case keyCode of
-                    40 ->
-                        -- Down
-                        { model | currentPosition = { x = curPos.x, y = curPos.y - 1 } } ! []
-
-                    38 ->
-                        -- Up
-                        { model | currentPosition = { x = curPos.x, y = curPos.y + 1 } } ! []
-
-                    37 ->
-                        -- Left
-                        { model | currentPosition = { x = curPos.x - 1, y = curPos.y } } ! []
-
-                    39 ->
-                        -- Right
-                        { model | currentPosition = { x = curPos.x + 1, y = curPos.y } } ! []
-
-                    _ ->
-                        model ! []
+                { model | gamePage = updatedGame } ! []
 
 
 view : Model -> Html Msg
 view model =
-    div [ class "gameBoard" ]
-        [ (model.tiles
-            |> Matrix.indexedMap (viewTile model)
-            |> matrixToDivs
-          )
-        ]
+    div []
+        [ Html.map GamePage <| Game.view model.gamePage ]
 
 
-viewTile : Model -> Int -> Int -> Tile -> Html Msg
-viewTile model x y tile =
-    div
-        [ class "gameTile"
-        , style
-            [ ( "background-image", "url(" ++ tile.backgroundImage ++ ")" )
-            ]
-        ]
-        [ if x == model.currentPosition.x && y == model.currentPosition.y then
-            div [ class "player", style [ ( "background-color", model.player.hatColor ) ] ] []
-          else
-            div [] []
-        ]
 
-
-matrixToDivs : Matrix (Html.Html Msg) -> Html.Html Msg
-matrixToDivs matrix =
-    let
-        makeRow y =
-            Matrix.getRow y matrix
-                |> Maybe.map (Array.toList)
-                |> Maybe.withDefault []
-                |> Html.div [ class "gameRow" ]
-
-        height =
-            Matrix.height matrix
-    in
-        [0..height]
-            |> List.map makeRow
-            |> Html.div []
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Keyboard.downs HandleKey
+-- program
+--     :  Parser data
+--     -> { init : data -> (model, Cmd msg)
+--        , update : msg -> model -> (model, Cmd msg)
+--        , urlUpdate : data -> model -> (model, Cmd msg)
+--        , view : model -> Html msg,
+--        subscriptions : model -> Sub msg }
+--     -> Program Never
+-- This function augments Html.App.program. The new things include:
+--
+-- Parser — Whenever this library changes the URL, the parser you provide will run. This turns the raw URL string into useful data.
+--
+-- urlUpdate — Whenever the Parser produces new data, we need to update our model in some way to react to the change. The urlUpdate function handles this case. (It works exactly like the normal update function. Take in a message, update the model.)
+--
+-- Note: The urlUpdate function is called every time the URL changes. This includes things exposed by this library, like back and newUrl, as well as whenever the user clicks the back or forward buttons of the browsers. If the address changes, you should hear about it.
 
 
 main : Program Never
 main =
-    Html.program
-        { init = ( init, Cmd.none )
+    Navigation.program (Navigation.makeParser locFor)
+        { init = init
         , update = update
+        , urlUpdate = urlUpdate
         , view = view
         , subscriptions = subscriptions
         }
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Keyboard.downs (\keyCode -> GamePage (Game.HandleKey keyCode))
