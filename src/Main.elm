@@ -3,6 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (class, style)
 import Html.App as Html
+import Keyboard
 
 
 -- | y
@@ -11,7 +12,14 @@ import Html.App as Html
 
 
 type alias Model =
-    { tiles : List Tile }
+    { tiles : List Tile
+    , player : Player
+    , currentPosition : Position
+    }
+
+
+type alias Position =
+    Int
 
 
 type alias Player =
@@ -23,23 +31,25 @@ type alias Player =
 type alias Tile =
     { name : String
     , backgroundImage : String
-    , player : Maybe Player
     }
 
 
 init : Model
 init =
-    { tiles = [ initTile <| Just greg, initTile Nothing, initTile Nothing, initTile Nothing, initTile Nothing ] }
-
-
-initTile : Maybe Player -> Tile
-initTile player =
-    { name = "grass"
-    , backgroundImage = "http://oi45.tinypic.com/2ir0vbl.jpg"
-    , player = player
+    { tiles = [ initTile, initTile, initTile, initTile, initTile ]
+    , player = greg
+    , currentPosition = 0
     }
 
 
+initTile : Tile
+initTile =
+    { name = "grass"
+    , backgroundImage = "http://oi45.tinypic.com/2ir0vbl.jpg"
+    }
+
+
+greg : Player
 greg =
     { name = "Greg"
     , hatColor = "red"
@@ -47,43 +57,57 @@ greg =
 
 
 type Msg
-    = NoOp
+    = HandleKey Int
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        NoOp ->
-            model
+        HandleKey keyCode ->
+            case keyCode of
+                40 ->
+                    -- Down
+                    { model | currentPosition = model.currentPosition - 1 } ! []
+
+                38 ->
+                    -- Up
+                    { model | currentPosition = model.currentPosition + 1 } ! []
+
+                _ ->
+                    model ! []
 
 
 view : Model -> Html Msg
 view model =
     div []
-        (List.map viewTile model.tiles)
+        (List.indexedMap (\index tile -> viewTile model index tile) model.tiles)
 
 
-viewTile : Tile -> Html Msg
-viewTile tile =
+viewTile : Model -> Position -> Tile -> Html Msg
+viewTile model position tile =
     div
         [ class "gameTile"
         , style
             [ ( "background-image", "url(" ++ tile.backgroundImage ++ ")" )
             ]
         ]
-        [ case tile.player of
-            Just player ->
-                div [ class "player", style [ ( "background-color", player.hatColor ) ] ] []
-
-            Nothing ->
-                div [] []
+        [ if position == model.currentPosition then
+            div [ class "player", style [ ( "background-color", model.player.hatColor ) ] ] []
+          else
+            div [] []
         ]
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Keyboard.downs HandleKey
 
 
 main : Program Never
 main =
-    Html.beginnerProgram
-        { model = init
+    Html.program
+        { init = ( init, Cmd.none )
         , update = update
         , view = view
+        , subscriptions = subscriptions
         }
