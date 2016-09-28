@@ -5,6 +5,8 @@ import Html.Events exposing (..)
 import Html.Attributes exposing (class, style)
 import Matrix exposing (Matrix)
 import Array exposing (Array)
+import GameBoard exposing (Tile, initTile)
+import Helpers
 
 
 -- | y
@@ -31,13 +33,6 @@ type alias Player =
     }
 
 
-type alias Tile =
-    { name : String
-    , image : String
-    , isAccessible : Bool
-    }
-
-
 initGameBoard : Matrix Tile
 initGameBoard =
     Matrix.repeat 5 5 <| initTile "grass" "./assets/PathAndObjects.png"
@@ -48,14 +43,6 @@ init =
     { gameMap = initGameBoard
     , player = greg
     , currentPosition = { x = 0, y = 0 }
-    }
-
-
-initTile : String -> String -> Tile
-initTile name image =
-    { name = name
-    , image = image
-    , isAccessible = True
     }
 
 
@@ -133,21 +120,16 @@ viewGame model =
         ]
 
 
-setBackgroundAsSprite : String -> ( String, String )
-setBackgroundAsSprite sprite =
-    ( "background", "url(" ++ sprite ++ ") 0px 0px" )
-
-
 viewTile : Model -> Int -> Int -> Tile -> Html Msg
 viewTile model x y tile =
     div
         [ class "gameTile"
         , style
-            [ setBackgroundAsSprite tile.image
+            [ Helpers.setBackgroundAsSprite tile.image
             ]
         ]
         [ if x == model.currentPosition.x && y == model.currentPosition.y then
-            div [ class "player", style [ setBackgroundAsSprite model.player.sprite ] ] []
+            div [ class "player", style [ Helpers.setBackgroundAsSprite model.player.sprite ] ] []
           else
             div [] []
         ]

@@ -6,9 +6,9 @@ import Html.App as Html
 import Keyboard
 import Navigation
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
+import String
 import Game
 import MapBuilder
-import String
 
 
 type alias Model =
