@@ -12,10 +12,9 @@ body {
 }
 
 .player {
-  border-radius: 50%;
-  width: 80%;
-  height: 80%;
-  background: url("http://opengameart.org/sites/default/files/spellun-sprite.png");
+  width: 85%;
+  height: 85%;
+  background: url("http://opengameart.org/sites/default/files/spellun-sprite.png no-repeat fixed center");
 }
 
 .gameBoard {
