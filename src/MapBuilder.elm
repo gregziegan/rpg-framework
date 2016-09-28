@@ -11,6 +11,7 @@ type alias Model =
     { tilePreview : Tile
     , tileName : String
     , tileImage : String
+    , createdTiles : List Tile
     }
 
 
@@ -19,6 +20,7 @@ init =
     { tilePreview = initTile "" ""
     , tileName = ""
     , tileImage = ""
+    , createdTiles = []
     }
         ! []
 
@@ -26,6 +28,7 @@ init =
 type Msg
     = SetTileName String
     | SetTileImage String
+    | CreateTile
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -59,14 +62,25 @@ update msg model =
                 }
                     ! []
 
+        CreateTile ->
+            { model
+                | createdTiles = model.tilePreview :: model.createdTiles
+                , tileName = ""
+                , tileImage = ""
+                , tilePreview = initTile "" ""
+            }
+                ! []
+
 
 viewTileBuilder : Model -> Html Msg
 viewTileBuilder model =
     div []
-        [ label [] [ text "Tile Name" ]
+        [ viewTile model.tilePreview
+        , label [] [ text "Tile Name" ]
         , input [ onInput SetTileName, value model.tileName ] []
         , label [] [ text "Tile Image" ]
         , input [ onInput SetTileImage, value model.tileImage ] []
+        , button [ onClick CreateTile ] [ text "Create Tile" ]
         ]
 
 
@@ -81,9 +95,15 @@ viewTile tile =
         []
 
 
+viewCreatedTiles : List Tile -> Html Msg
+viewCreatedTiles tiles =
+    div []
+        (List.map viewTile tiles)
+
+
 view : Model -> Html Msg
 view model =
     div []
-        [ viewTile model.tilePreview
+        [ viewCreatedTiles model.createdTiles
         , viewTileBuilder model
         ]
