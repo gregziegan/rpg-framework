@@ -107,7 +107,7 @@ update msg model =
                         model ! []
 
 
-view : Context -> Model -> Html Msg
+view : Model -> Html Msg
 view model =
     div []
         [ viewToolbar model
