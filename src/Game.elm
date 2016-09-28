@@ -26,19 +26,20 @@ type alias Position =
 
 type alias Player =
     { name : String
-    , hatColor : String
+    , sprite : String
     }
 
 
 type alias Tile =
     { name : String
-    , backgroundImage : String
+    , image : String
+    , isAccessible : Bool
     }
 
 
 initGameBoard : Matrix Tile
 initGameBoard =
-    Matrix.repeat 5 5 <| initTile "grass" "http://oi45.tinypic.com/2ir0vbl.jpg"
+    Matrix.repeat 5 5 <| initTile "grass" "http://opengameart.org/sites/default/files/PathAndObjects_0.png"
 
 
 init : Model
@@ -50,16 +51,25 @@ init =
 
 
 initTile : String -> String -> Tile
-initTile name backgroundImage =
+initTile name image =
     { name = name
-    , backgroundImage = backgroundImage
+    , image = image
+    , isAccessible = True
     }
+
+
+
+-- type Tile
+--   = Free
+--   | CannotAccess
+--   | Conditional
 
 
 greg : Player
 greg =
-    { name = "Greg"
-    , hatColor = "red"
+    { name =
+        "Greg"
+    , sprite = "./assets/spellun-sprite.png"
     }
 
 
@@ -106,16 +116,21 @@ view model =
         ]
 
 
+setBackgroundAsSprite : String -> ( String, String )
+setBackgroundAsSprite sprite =
+    ( "background", "url(" ++ sprite ++ ") 0px 0px" )
+
+
 viewTile : Model -> Int -> Int -> Tile -> Html Msg
 viewTile model x y tile =
     div
         [ class "gameTile"
         , style
-            [ ( "background-image", "url(" ++ tile.backgroundImage ++ ")" )
+            [ setBackgroundAsSprite tile.image
             ]
         ]
         [ if x == model.currentPosition.x && y == model.currentPosition.y then
-            div [ class "player", style [ ( "background-color", model.player.hatColor ) ] ] []
+            div [ class "player", style [ setBackgroundAsSprite model.player.sprite ] ] []
           else
             div [] []
         ]
