@@ -53,6 +53,7 @@ pageParser =
 type Msg
     = SetGame Game.Msg
     | SetMapBuilder MapBuilder.Msg
+    | GoToPage Page
 
 
 urlUpdate : Result String Page -> Model -> ( Model, Cmd Msg )
@@ -81,6 +82,9 @@ update msg model =
                     MapBuilder.update mapBuilderMsg model.mapBuilder
             in
                 { model | mapBuilder = updatedMapBuilder } ! []
+
+        GoToPage page ->
+            { model | page = page } ! [ Navigation.newUrl (toHash page) ]
 
 
 view : Model -> Html Msg

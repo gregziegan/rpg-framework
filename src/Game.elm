@@ -1,6 +1,7 @@
 module Game exposing (..)
 
 import Html exposing (..)
+import Html.Events exposing (..)
 import Html.Attributes exposing (class, style)
 import Matrix exposing (Matrix)
 import Array exposing (Array)
@@ -106,8 +107,24 @@ update msg model =
                         model ! []
 
 
-view : Model -> Html Msg
+view : Context -> Model -> Html Msg
 view model =
+    div []
+        [ viewToolbar model
+        , viewGame model
+        ]
+
+
+viewToolbar : Model -> Html Msg
+viewToolbar model =
+    div
+        [-- , button [ onClick (goToPage "map-builder")
+        ]
+        []
+
+
+viewGame : Model -> Html Msg
+viewGame model =
     div [ class "gameBoard" ]
         [ (model.gameMap
             |> Matrix.indexedMap (viewTile model)
