@@ -1,124 +1,108 @@
 module Main exposing (..)
 
-import Html exposing (..)
+import Html exposing (Html)
 import Html.Attributes exposing (class, style)
 import Html.App as Html
 import Keyboard
 import Navigation
-
-
--- import UrlParser as P
-
+import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 import Game
 import MapBuilder
-
-
--- | y
--- |
--- ___ x
+import String
 
 
 type alias Model =
-    { gamePage : Game.Model
-    , mapBuilderPage : MapBuilder.Model
-    , url : String
+    { page : Page
+    , game : Game.Model
+    , mapBuilder : MapBuilder.Model
     }
 
 
-init : Maybe Location -> ( Model, Cmd Msg )
-init location =
-    ( { gamePage = Game.init
-      , mapBuilderPage = fst <| MapBuilder.init
-      , url = "#map-builder"
-      }
-    , Cmd.none
-    )
+init : Result String Page -> ( Model, Cmd Msg )
+init result =
+    urlUpdate result
+        { page = GamePage
+        , game = Game.init
+        , mapBuilder = fst <| MapBuilder.init
+        }
 
 
-type Location
-    = GameLoc
-    | MapBuilderLoc
+type Page
+    = GamePage
+    | MapBuilderPage
 
 
-urlFor : Location -> String
-urlFor loc =
-    let
-        url =
-            case loc of
-                GameLoc ->
-                    "game"
+toHash : Page -> String
+toHash page =
+    case page of
+        GamePage ->
+            "#game"
 
-                MapBuilderLoc ->
-                    "map-builder"
-    in
-        "#" ++ url
+        MapBuilderPage ->
+            "#map-builder"
 
 
-locFor : Navigation.Location -> Maybe Location
-locFor path =
-    let
-        segments =
-            path.hash
-    in
-        case segments of
-            "#game" ->
-                Just GameLoc
-
-            "#map-builder" ->
-                Just MapBuilderLoc
-
-            _ ->
-                Just MapBuilderLoc
+pageParser : Parser (Page -> a) a
+pageParser =
+    oneOf
+        [ format GamePage (s "game")
+        , format MapBuilderPage (s "map-builder")
+        ]
 
 
 type Msg
-    = GamePage Game.Msg
-    | MapBuilder MapBuilder.Msg
+    = SetGame Game.Msg
+    | SetMapBuilder MapBuilder.Msg
 
 
-urlUpdate : Maybe Location -> Model -> ( Model, Cmd Msg )
-urlUpdate location oldModel =
-    let
-        newModel =
-            case Maybe.withDefault MapBuilderLoc location of
-                GameLoc ->
-                    { oldModel | url = "#game" }
+urlUpdate : Result String Page -> Model -> ( Model, Cmd Msg )
+urlUpdate result model =
+    case Debug.log "urlResult" result of
+        Err _ ->
+            ( model, Navigation.modifyUrl (toHash model.page) )
 
-                MapBuilderLoc ->
-                    { oldModel | url = "#map-builder" }
-    in
-        ( newModel
-        , Cmd.none
-        )
+        Ok page ->
+            { model | page = page } ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GamePage gameMsg ->
+        SetGame gameMsg ->
             let
                 ( updatedGame, commands ) =
-                    Game.update gameMsg model.gamePage
+                    Game.update gameMsg model.game
             in
-                { model | gamePage = updatedGame } ! []
+                { model | game = updatedGame } ! []
 
-        MapBuilder mapBuilderMsg ->
+        SetMapBuilder mapBuilderMsg ->
             let
                 ( updatedMapBuilder, commands ) =
-                    MapBuilder.update mapBuilderMsg model.mapBuilderPage
+                    MapBuilder.update mapBuilderMsg model.mapBuilder
             in
-                { model | mapBuilderPage = updatedMapBuilder } ! []
+                { model | mapBuilder = updatedMapBuilder } ! []
 
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ Html.map GamePage <| Game.view model.gamePage ]
+    Html.div []
+        [ case model.page of
+            GamePage ->
+                Html.map SetGame <| Game.view model.game
+
+            MapBuilderPage ->
+                Html.map SetMapBuilder <| MapBuilder.view model.mapBuilder
+        ]
+
+
+hashParser : Navigation.Location -> Result String Page
+hashParser location =
+    UrlParser.parse identity pageParser (String.dropLeft 1 location.hash)
 
 
 main : Program Never
 main =
-    Navigation.program (Navigation.makeParser locFor)
+    Navigation.program (Navigation.makeParser hashParser)
         { init = init
         , update = update
         , urlUpdate = urlUpdate
@@ -129,4 +113,4 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Keyboard.downs (\keyCode -> GamePage (Game.HandleKey keyCode))
+    Keyboard.downs (\keyCode -> SetGame (Game.HandleKey keyCode))
