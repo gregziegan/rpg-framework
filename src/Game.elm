@@ -39,7 +39,7 @@ type alias Tile =
 
 initGameBoard : Matrix Tile
 initGameBoard =
-    Matrix.repeat 5 5 <| initTile "grass" "http://opengameart.org/sites/default/files/PathAndObjects_0.png"
+    Matrix.repeat 5 5 <| initTile "grass" "./assets/PathAndObjects.png"
 
 
 init : Model
