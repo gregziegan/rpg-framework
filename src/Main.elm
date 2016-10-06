@@ -9,6 +9,7 @@ import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 import String
 import Game
 import MapBuilder
+import Mouse
 
 
 type alias Model =
@@ -117,4 +118,8 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Keyboard.downs (\keyCode -> SetGame (Game.HandleKey keyCode))
+    Sub.batch
+        [ Keyboard.downs (\keyCode -> SetGame (Game.HandleKey keyCode))
+        , Mouse.moves (\pos -> SetMapBuilder (MapBuilder.TileDragAt pos))
+        , Mouse.ups (\pos -> SetMapBuilder (MapBuilder.TileDragEnd pos))
+        ]
