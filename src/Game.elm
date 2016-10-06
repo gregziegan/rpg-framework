@@ -5,7 +5,7 @@ import Html.Events exposing (..)
 import Html.Attributes exposing (class, style)
 import Matrix exposing (Matrix)
 import Array exposing (Array)
-import GameBoard exposing (Tile, initTile)
+import Map exposing (Tile, initTile)
 import Helpers
 
 
@@ -115,7 +115,7 @@ viewGame model =
     div [ class "gameBoard" ]
         [ (model.gameMap
             |> Matrix.indexedMap (viewTile model)
-            |> matrixToDivs
+            |> Map.matrixToDivs
           )
         ]
 
@@ -133,20 +133,3 @@ viewTile model x y tile =
           else
             div [] []
         ]
-
-
-matrixToDivs : Matrix (Html.Html Msg) -> Html.Html Msg
-matrixToDivs matrix =
-    let
-        makeRow y =
-            Matrix.getRow y matrix
-                |> Maybe.map (Array.toList)
-                |> Maybe.withDefault []
-                |> Html.div [ class "gameRow" ]
-
-        height =
-            Matrix.height matrix
-    in
-        [0..height]
-            |> List.map makeRow
-            |> Html.div []

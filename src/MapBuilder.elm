@@ -3,8 +3,9 @@ module MapBuilder exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import GameBoard exposing (Tile, initTile)
+import Map exposing (Tile, initTile)
 import Helpers
+import Matrix exposing (Matrix)
 
 
 type alias Model =
@@ -12,6 +13,7 @@ type alias Model =
     , tileName : String
     , tileImage : String
     , createdTiles : List Tile
+    , gameMapPreview : Matrix Tile
     }
 
 
@@ -21,6 +23,7 @@ init =
     , tileName = ""
     , tileImage = ""
     , createdTiles = []
+    , gameMapPreview = Matrix.repeat 5 5 (Map.initTile "grass" "./assets/PathAndObjects.png")
     }
         ! []
 
@@ -74,7 +77,7 @@ update msg model =
 
 viewTileBuilder : Model -> Html Msg
 viewTileBuilder model =
-    div []
+    div [ class "tile-builder" ]
         [ viewTile model.tilePreview
         , label [] [ text "Tile Name" ]
         , input [ onInput SetTileName, value model.tileName ] []
@@ -97,13 +100,34 @@ viewTile tile =
 
 viewCreatedTiles : List Tile -> Html Msg
 viewCreatedTiles tiles =
-    div []
+    div [ class "created-tiles" ]
         (List.map viewTile tiles)
 
 
 view : Model -> Html Msg
 view model =
-    div []
+    div [ class "map-builder" ]
         [ viewCreatedTiles model.createdTiles
         , viewTileBuilder model
+        , viewMapPreview model
         ]
+
+
+viewMapPreview : Model -> Html Msg
+viewMapPreview model =
+    div [ class "map-preview" ]
+        [ model.gameMapPreview
+            |> Matrix.map viewTile
+            |> Map.matrixToDivs
+        ]
+
+
+viewMapTile : Model -> Int -> Int -> Tile -> Html Msg
+viewMapTile model x y tile =
+    div
+        [ class "gameTile"
+        , style
+            [ Helpers.setBackgroundAsSprite tile.image
+            ]
+        ]
+        []
