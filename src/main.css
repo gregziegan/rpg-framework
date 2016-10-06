@@ -25,3 +25,13 @@ body {
 .gameRow {
   display: flex;
 }
+
+.tile-selector {
+  list-style-type: none;
+  background: white;
+}
+
+.tile-option {
+  z-index: 100;
+  padding: 5px;
+}
